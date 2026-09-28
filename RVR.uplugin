@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "RVR",
-	"Description": "",
+	"Description": "Stream the Editor's VR Preview to a headset elsewhere. A shell over rvr-host-api.",
 	"Category": "Other",
 	"CreatedBy": "RVR",
 	"CreatedByURL": "",
@@ -19,6 +19,17 @@
 			"Name": "RVR",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "RVREditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "OpenXR",
+			"Enabled": true
 		}
 	]
 }
