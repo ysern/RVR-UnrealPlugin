@@ -49,6 +49,7 @@ void OpenHostSessionForThisProject()
 			Level = World->GetMapName();
 		}
 	}
+	UE_LOG(LogRVREditor, Log, TEXT("The Host Session describes %s, level %s."), FApp::GetProjectName(), *Level);
 	FRVRModule::Get().OpenHostSession(TEXT("Unreal Editor"), FApp::GetProjectName(), Level);
 }
 } // namespace
@@ -65,12 +66,40 @@ void FRVREditorModule::StartupModule()
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FRVREditorModule::RegisterToolbar));
 	StatusHandle = FRVRModule::Get().OnStatusChanged.AddRaw(this, &FRVREditorModule::OnStatusChanged);
 
+	MapChangeHandle = FEditorDelegates::MapChange.AddRaw(this, &FRVREditorModule::OnMapChange);
+	EditorInitializedHandle = FEditorDelegates::OnEditorInitialized.AddRaw(this, &FRVREditorModule::OnEditorInitialized);
+
 	const URVRSettings* Settings = GetDefault<URVRSettings>();
 	if (Settings->bGoOnlineAtStartup)
 	{
 		UE_LOG(LogRVREditor, Log, TEXT("Going online, as this project's settings ask."));
 		FRVRModule::Get().GoOnline(Settings->SignallingServer, Settings->ConnectionProfile.FilePath);
 		FRVRModule::Get().ChooseLobby(Settings->Lobby);
+		// The Host Session names the open level, and while the Editor starts there is none yet: its world is
+		// still the empty one it begins with. Opened once the level is there, or the Editor has finished starting.
+		bOpenHostSessionWhenLevelIsKnown = true;
+	}
+}
+
+void FRVREditorModule::OnMapChange(uint32 Flags)
+{
+	if (Flags & MapChangeEventFlags::NewMap)
+	{
+		DescribeHostSession();
+	}
+}
+
+void FRVREditorModule::OnEditorInitialized(double)
+{
+	DescribeHostSession();
+}
+
+void FRVREditorModule::DescribeHostSession()
+{
+	// Opening a Host Session this application already holds gives it its new description.
+	if (bOpenHostSessionWhenLevelIsKnown || FRVRModule::Get().GetStatus().bHostSessionYours)
+	{
+		bOpenHostSessionWhenLevelIsKnown = false;
 		OpenHostSessionForThisProject();
 	}
 }
@@ -81,6 +110,8 @@ void FRVREditorModule::ShutdownModule()
 	{
 		FRVRModule::Get().OnStatusChanged.Remove(StatusHandle);
 	}
+	FEditorDelegates::MapChange.Remove(MapChangeHandle);
+	FEditorDelegates::OnEditorInitialized.Remove(EditorInitializedHandle);
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
 	if (Style.IsValid())

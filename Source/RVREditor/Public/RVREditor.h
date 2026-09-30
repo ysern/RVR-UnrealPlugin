@@ -26,9 +26,16 @@ private:
 	void OnStatusChanged();
 	void AnswerStartRequest();
 	void FollowShouldRunVr();
+	void OnMapChange(uint32 Flags);
+	void OnEditorInitialized(double Duration);
+	/** Opens the Host Session asked for at start-up, or gives the one this Editor holds its new level. */
+	void DescribeHostSession();
 
 	TSharedPtr<FSlateStyleSet> Style;
 	TWeakPtr<SWindow> Dialog;
 	FDelegateHandle StatusHandle;
+	FDelegateHandle MapChangeHandle;
+	FDelegateHandle EditorInitializedHandle;
 	bool bInVr = false;
+	bool bOpenHostSessionWhenLevelIsKnown = false;
 };
